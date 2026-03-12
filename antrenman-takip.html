@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Antrenman">
+<meta name="theme-color" content="#ffffff">
+<title>Antrenman Takip</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f4; --bg3: #eeede9;
+    --text: #1a1a1a; --text2: #6b6b6b; --text3: #9b9b9b;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.2);
+    --radius: 8px; --radius-lg: 12px;
+    --r0-bg:#FCEBEB; --r0-c:#A32D2D;
+    --r1-bg:#FAEEDA; --r1-c:#854F0B;
+    --r2-bg:#FAEEDA; --r2-c:#BA7517;
+    --r3-bg:#EAF3DE; --r3-c:#3B6D11;
+    --r4-bg:#E1F5EE; --r4-c:#0F6E56;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+      --text: #f2f2f7; --text2: #aeaeb2; --text3: #636366;
+      --border: rgba(255,255,255,0.12); --border2: rgba(255,255,255,0.2);
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .app { max-width: 680px; margin: 0 auto; padding: 0 0 80px; }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--bg); border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 100; overflow-x: auto; }
+  .tab { flex: 1; min-width: 80px; padding: 14px 8px; font-size: 12px; text-align: center; cursor: pointer; color: var(--text2); border: none; background: none; font-family: inherit; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* FORM */
+  label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
+  input, select, textarea { width: 100%; padding: 10px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 15px; background: var(--bg); color: var(--text); font-family: inherit; appearance: auto; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--text2); }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .header-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-grid-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+  .btn { padding: 10px 16px; background: var(--bg2); border: 0.5px solid var(--border2); border-radius: var(--radius); cursor: pointer; font-size: 14px; color: var(--text); font-family: inherit; font-weight: 500; width: 100%; }
+  .btn:active { opacity: 0.7; }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* AUTOCOMPLETE */
+  .ac-wrap { position: relative; }
+  .ac-drop { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); z-index: 300; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .ac-item { padding: 10px 12px; font-size: 14px; cursor: pointer; color: var(--text); border-bottom: 0.5px solid var(--border); }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:active, .ac-item.hi { background: var(--bg2); }
+
+  /* TABLE */
+  .tbl-wrap { overflow-x: auto; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 420px; }
+  th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text2); padding: 6px 8px; border-bottom: 0.5px solid var(--border); }
+  td { padding: 8px 8px; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .pr-row { background: rgba(250,238,218,0.2); }
+
+  /* BADGES */
+  .badge { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
+  .r0 { background: var(--r0-bg); color: var(--r0-c); }
+  .r1 { background: var(--r1-bg); color: var(--r1-c); }
+  .r2 { background: var(--r2-bg); color: var(--r2-c); }
+  .r3 { background: var(--r3-bg); color: var(--r3-c); }
+  .r4 { background: var(--r4-bg); color: var(--r4-c); }
+  .pr-b { background: #FAEEDA; color: #854F0B; }
+  .sp-b { background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); }
+
+  /* MISC */
+  .del { background: none; border: none; cursor: pointer; color: var(--text2); font-size: 16px; padding: 0 4px; }
+  .empty { color: var(--text2); font-size: 14px; padding: 2rem 0; text-align: center; }
+  .sec { font-size: 13px; font-weight: 500; color: var(--text2); margin: 1.2rem 0 0.5rem; }
+  .note-cell { font-size: 12px; color: var(--text2); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: var(--bg2); border-radius: var(--radius); padding: 12px; }
+  .stat-lbl { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .stat-val { font-size: 20px; font-weight: 600; color: var(--text); }
+
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+  .frow { display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+  .frow label { margin: 0; font-size: 13px; }
+  .frow select { width: auto; font-size: 13px; padding: 6px 8px; }
+
+  @media (max-width: 480px) {
+    .header-grid { grid-template-columns: 1fr 1fr; }
+    .header-grid > div:last-child { grid-column: 1 / -1; }
+    .form-grid-bottom { grid-template-columns: 1fr 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="tabs">
+    <button class="tab active" id="tab-kaydet">Kaydet</button>
+    <button class="tab" id="tab-gecmis">Geçmiş</button>
+    <button class="tab" id="tab-pr">Rekorlar</button>
+    <button class="tab" id="tab-split">Splitler</button>
+  </div>
+
+  <!-- KAYDET -->
+  <div id="page-kaydet" class="page active">
+    <div class="header-grid">
+      <div><label>Tarih</label><input type="date" id="inp-tarih"></div>
+      <div><label>Split</label><select id="inp-split"></select></div>
+      <div><label>Gün</label><select id="inp-gun"></select></div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label>Egzersiz</label>
+      <div class="ac-wrap">
+        <input type="text" id="inp-eg" placeholder="Yaz veya listeden seç..." autocomplete="off">
+        <div class="ac-drop" id="ac-drop" style="display:none"></div>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div><label>Ağırlık (kg)</label><input type="number" id="inp-ag" placeholder="80" min="0" step="0.5" inputmode="decimal"></div>
+      <div><label>Set</label><input type="number" id="inp-set" value="3" min="1" inputmode="numeric"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>Tekrar</label><input type="number" id="inp-tek" placeholder="8" min="1" inputmode="numeric"></div>
+      <div><label>RIR</label>
+        <select id="inp-rir">
+          <option value="0">RIR 0 — limite kadar</option>
+          <option value="1">RIR 1 — 1 kaldı</option>
+          <option value="2" selected>RIR 2 — 2 kaldı</option>
+          <option value="3">RIR 3 — 3 kaldı</option>
+          <option value="4">RIR 4+ — rahat</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px"><label>Not</label><textarea id="inp-not" placeholder="Form notları, his..."></textarea></div>
+    <button class="btn btn-primary" id="btn-ekle">+ Ekle</button>
+    <div class="sec">Bu oturum</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Egzersiz</th><th>Ağırlık</th><th>Set</th><th>Tek</th><th>RIR</th><th>Not</th><th></th></tr></thead>
+        <tbody id="tbody-session"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- GEÇMİŞ -->
+  <div id="page-gecmis" class="page">
+    <div class="frow">
+      <label>Split:</label><select id="f-split"><option value="">Tümü</option></select>
+      <label>Egzersiz:</label><select id="f-eg"><option value="">Tümü</option></select>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Tarih</th><th>Gün</th><th>Split</th><th>Egzersiz</th><th>Ağırlık</th><th>Set</th><th>Tek</th><th>RIR</th><th>Not</th><th></th></tr></thead>
+        <tbody id="tbody-gecmis"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REKORLAR -->
+  <div id="page-pr" class="page">
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-lbl">Toplam set</div><div class="stat-val" id="st-set">0</div></div>
+      <div class="stat"><div class="stat-lbl">Toplam ton</div><div class="stat-val" id="st-ton">0</div></div>
+      <div class="stat"><div class="stat-lbl">Egzersiz</div><div class="stat-val" id="st-cesit">0</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Egzersiz</th><th>En yüksek ağırlık</th><th>RIR</th><th>En yüksek tekrar</th></tr></thead>
+        <tbody id="tbody-pr"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SPLİTLER -->
+  <div id="page-split" class="page">
+    <div class="sec" style="margin-top:0">Yeni split oluştur</div>
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem;align-items:end">
+      <div style="flex:1"><label>Split adı</label><input type="text" id="inp-splitad" placeholder="PPL, Upper Lower, Full Body..."></div>
+      <button class="btn" id="btn-splitekle" style="width:auto;white-space:nowrap">+ Oluştur</button>
+    </div>
+    <div id="split-liste"></div>
+  </div>
+</div>
+
+<script>
+const GUNLER = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+
+function loadDB() {
+  try {
+    const d = localStorage.getItem('antrenman_v1');
+    if (d) return JSON.parse(d);
+  } catch(e) {}
+  return {
+    splits: [
+      { id:'s1', ad:'Push Pull Legs', tipler:{
+        'Push':['Bench Press','Overhead Press','Incline Bench','Tricep Pushdown','Lateral Raise'],
+        'Pull':['Deadlift','Barbell Row','Lat Pulldown','Bicep Curl','Face Pull'],
+        'Legs':['Squat','Leg Press','Romanian Deadlift','Leg Curl','Calf Raise']
+      }},
+      { id:'s2', ad:'Upper Lower', tipler:{
+        'Upper':['Bench Press','Barbell Row','Overhead Press','Lat Pulldown','Bicep Curl','Tricep Pushdown'],
+        'Lower':['Squat','Romanian Deadlift','Leg Press','Leg Curl','Calf Raise']
+      }}
+    ],
+    log: []
+  };
+}
+
+const DB = loadDB();
+function save() { try { localStorage.setItem('antrenman_v1', JSON.stringify(DB)); } catch(e) {} }
+function getSplit(id) { return DB.splits.find(s => s.id === id) || null; }
+function tarihtenGun(t) { if(!t) return 'Pazartesi'; const d=new Date(t+'T12:00:00'); return GUNLER[(d.getDay()+6)%7]; }
+
+// TABS
+['kaydet','gecmis','pr','split'].forEach(p => {
+  document.getElementById('tab-'+p).addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('page-'+p).classList.add('active');
+    if(p==='kaydet') renderSession();
+    if(p==='gecmis') renderGecmis();
+    if(p==='pr') renderPR();
+    if(p==='split') renderSplitler();
+  });
+});
+
+// SPLIT/GUN
+function populateSplits() {
+  const sel = document.getElementById('inp-split');
+  const cur = sel.value;
+  sel.innerHTML = DB.splits.map(s=>`<option value="${s.id}">${s.ad}</option>`).join('');
+  if(DB.splits.find(s=>s.id===cur)) sel.value = cur;
+  populateGunler();
+}
+function populateGunler() {
+  const tarih = document.getElementById('inp-tarih').value;
+  const bugun = tarihtenGun(tarih);
+  const sel = document.getElementById('inp-gun');
+  sel.innerHTML = GUNLER.map(g=>`<option value="${g}">${g}</option>`).join('');
+  sel.value = bugun;
+  acRefresh();
+}
+document.getElementById('inp-split').addEventListener('change', acRefresh);
+document.getElementById('inp-gun').addEventListener('change', acRefresh);
+document.getElementById('inp-tarih').addEventListener('change', function() {
+  document.getElementById('inp-gun').value = tarihtenGun(this.value);
+  acRefresh();
+});
+
+// AUTOCOMPLETE
+let acIdx = -1;
+function getEgSuggestions() {
+  const sid = document.getElementById('inp-split').value;
+  const split = getSplit(sid);
+  let list = [];
+  if(split) Object.values(split.tipler).forEach(arr=>arr.forEach(e=>{ if(!list.includes(e)) list.push(e); }));
+  DB.log.forEach(d=>{ if(!list.includes(d.egzersiz)) list.push(d.egzersiz); });
+  return list;
+}
+function acRefresh() {
+  const val = document.getElementById('inp-eg').value.trim().toLowerCase();
+  const all = getEgSuggestions();
+  const filtered = val ? all.filter(e=>e.toLowerCase().includes(val)) : all;
+  acIdx = -1;
+  const drop = document.getElementById('ac-drop');
+  if(!filtered.length) { drop.style.display='none'; return; }
+  drop.innerHTML = filtered.map(e=>`<div class="ac-item">${e}</div>`).join('');
+  drop.style.display = 'block';
+  drop.querySelectorAll('.ac-item').forEach(item => {
+    item.addEventListener('mousedown', function(ev) {
+      ev.preventDefault();
+      document.getElementById('inp-eg').value = this.textContent;
+      drop.style.display = 'none';
+      document.getElementById('inp-ag').focus();
+    });
+  });
+}
+document.getElementById('inp-eg').addEventListener('input', acRefresh);
+document.getElementById('inp-eg').addEventListener('focus', acRefresh);
+document.getElementById('inp-eg').addEventListener('keydown', function(e) {
+  const drop = document.getElementById('ac-drop');
+  const items = drop.querySelectorAll('.ac-item');
+  if(!items.length) return;
+  if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,items.length-1);hlAc(items);e.preventDefault();}
+  else if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,-1);hlAc(items);e.preventDefault();}
+  else if(e.key==='Enter'&&acIdx>=0){this.value=items[acIdx].textContent;drop.style.display='none';e.preventDefault();}
+  else if(e.key==='Escape') drop.style.display='none';
+});
+document.addEventListener('click', e=>{ if(!document.getElementById('inp-eg').contains(e.target)) document.getElementById('ac-drop').style.display='none'; });
+function hlAc(items){items.forEach((it,i)=>it.classList.toggle('hi',i===acIdx));if(acIdx>=0)items[acIdx].scrollIntoView({block:'nearest'});}
+
+// EKLE
+document.getElementById('btn-ekle').addEventListener('click', function() {
+  const eg  = document.getElementById('inp-eg').value.trim();
+  const ag  = parseFloat(document.getElementById('inp-ag').value);
+  const se  = parseInt(document.getElementById('inp-set').value);
+  const tek = parseInt(document.getElementById('inp-tek').value);
+  const rir = document.getElementById('inp-rir').value;
+  const not = document.getElementById('inp-not').value.trim();
+  const tarih = document.getElementById('inp-tarih').value;
+  const sid = document.getElementById('inp-split').value;
+  const gun = document.getElementById('inp-gun').value;
+  let ok = true;
+  ['inp-eg','inp-ag','inp-tek'].forEach(id=>document.getElementById(id).style.borderColor='');
+  if(!eg){document.getElementById('inp-eg').style.borderColor='#E24B4A';ok=false;}
+  if(isNaN(ag)||ag<=0){document.getElementById('inp-ag').style.borderColor='#E24B4A';ok=false;}
+  if(isNaN(tek)||tek<=0){document.getElementById('inp-tek').style.borderColor='#E24B4A';ok=false;}
+  if(!ok) return;
+  const split = getSplit(sid);
+  DB.log.push({id:Date.now(),tarih,splitId:sid,splitAd:split?split.ad:'',gun,egzersiz:eg,agirlik:ag,set:se,tekrar:tek,rir,not});
+  save();
+  document.getElementById('inp-eg').value='';
+  document.getElementById('inp-ag').value='';
+  document.getElementById('inp-tek').value='';
+  document.getElementById('inp-not').value='';
+  document.getElementById('ac-drop').style.display='none';
+  renderSession();
+});
+
+function rirB(r){
+  const cls=['r0','r1','r2','r3','r4'][Math.min(parseInt(r),4)];
+  return `<span class="badge ${cls}">RIR ${r}</span>`;
+}
+
+function renderSession(){
+  const tarih = document.getElementById('inp-tarih').value;
+  const rows = DB.log.filter(d=>d.tarih===tarih);
+  const tbody = document.getElementById('tbody-session');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="empty">Henüz kayıt yok</td></tr>';return;}
+  tbody.innerHTML = rows.map(d=>`<tr>
+    <td>${d.egzersiz}</td><td>${d.agirlik}kg</td><td>${d.set}</td><td>${d.tekrar}</td>
+    <td>${rirB(d.rir)}</td><td class="note-cell">${d.not||'—'}</td>
+    <td><button class="del" data-id="${d.id}">✕</button></td>
+  </tr>`).join('');
+  tbody.querySelectorAll('.del').forEach(btn=>btn.addEventListener('click',function(){
+    DB.log=DB.log.filter(d=>d.id!==parseInt(this.dataset.id));save();renderSession();
+  }));
+}
+
+function renderGecmis(){
+  const fs=document.getElementById('f-split').value;
+  const fe=document.getElementById('f-eg').value;
+  const allS=[...new Set(DB.log.map(d=>d.splitAd).filter(Boolean))];
+  const allE=[...new Set(DB.log.map(d=>d.egzersiz))].sort();
+  document.getElementById('f-split').innerHTML='<option value="">Tümü</option>'+allS.map(s=>`<option value="${s}"${s===fs?' selected':''}>${s}</option>`).join('');
+  document.getElementById('f-eg').innerHTML='<option value="">Tümü</option>'+allE.map(e=>`<option value="${e}"${e===fe?' selected':''}>${e}</option>`).join('');
+  const prs=getPRs();
+  const rows=[...DB.log].filter(d=>(!fs||d.splitAd===fs)&&(!fe||d.egzersiz===fe)).reverse();
+  const tbody=document.getElementById('tbody-gecmis');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="10" class="empty">Kayıt bulunamadı</td></tr>';return;}
+  tbody.innerHTML=rows.map(d=>{
+    const isPR=prs[d.egzersiz]&&prs[d.egzersiz].maxAg===d.agirlik;
+    return `<tr class="${isPR?'pr-row':''}">
+      <td>${d.tarih}</td><td>${d.gun||'—'}</td>
+      <td><span class="badge sp-b">${d.splitAd||'—'}</span></td>
+      <td>${d.egzersiz}${isPR?' <span class="badge pr-b">PR</span>':''}</td>
+      <td>${d.agirlik}kg</td><td>${d.set}</td><td>${d.tekrar}</td><td>${rirB(d.rir)}</td>
+      <td class="note-cell">${d.not||'—'}</td>
+      <td><button class="del" data-id="${d.id}">✕</button></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('.del').forEach(btn=>btn.addEventListener('click',function(){
+    DB.log=DB.log.filter(d=>d.id!==parseInt(this.dataset.id));save();renderGecmis();
+  }));
+}
+
+function getPRs(){
+  const prs={};
+  DB.log.forEach(d=>{
+    if(!prs[d.egzersiz]) prs[d.egzersiz]={maxAg:0,maxAgRir:'-',maxTek:0};
+    if(d.agirlik>prs[d.egzersiz].maxAg){prs[d.egzersiz].maxAg=d.agirlik;prs[d.egzersiz].maxAgRir=d.rir;}
+    if(d.tekrar>prs[d.egzersiz].maxTek) prs[d.egzersiz].maxTek=d.tekrar;
+  });
+  return prs;
+}
+
+function renderPR(){
+  const prs=getPRs();const keys=Object.keys(prs);
+  const tbody=document.getElementById('tbody-pr');
+  if(!keys.length){tbody.innerHTML='<tr><td colspan="4" class="empty">Henüz kayıt yok</td></tr>';return;}
+  tbody.innerHTML=keys.sort().map(eg=>`<tr><td>${eg}</td><td>${prs[eg].maxAg} kg</td><td>${rirB(prs[eg].maxAgRir)}</td><td>${prs[eg].maxTek}</td></tr>`).join('');
+  const ton=DB.log.reduce((s,d)=>s+d.agirlik*d.tekrar*d.set,0);
+  document.getElementById('st-set').textContent=DB.log.reduce((s,d)=>s+d.set,0);
+  document.getElementById('st-ton').textContent=Math.round(ton/100)/10+'t';
+  document.getElementById('st-cesit').textContent=keys.length;
+}
+
+function renderSplitler(){
+  const el=document.getElementById('split-liste');
+  if(!DB.splits.length){el.innerHTML='<div class="empty">Henüz split yok</div>';return;}
+  el.innerHTML=DB.splits.map(s=>`
+    <div class="card">
+      <div class="card-head">
+        <span style="font-size:15px;font-weight:600">${s.ad}</span>
+        <button class="del" data-sid="${s.id}" style="font-size:13px;color:#A32D2D">Sil</button>
+      </div>
+      <div style="margin-bottom:8px;display:flex;gap:6px">
+        <input type="text" placeholder="Yeni tip (Push, Upper...)" class="inp-yenitipi" data-sid="${s.id}" style="flex:1;font-size:13px;padding:7px 10px">
+        <button class="btn btn-tipi" style="width:auto;white-space:nowrap;font-size:13px;padding:7px 12px" data-sid="${s.id}">+ Tip</button>
+      </div>
+      ${Object.keys(s.tipler).map(t=>`
+        <div style="margin-bottom:12px;padding:10px;background:var(--bg2);border-radius:var(--radius)">
+          <div style="font-size:13px;font-weight:500;margin-bottom:6px">${t}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+            ${s.tipler[t].map(e=>`<span style="font-size:12px;padding:3px 10px;border-radius:20px;background:var(--bg);border:0.5px solid var(--border2)">${e} <span class="chip-del" style="cursor:pointer" data-sid="${s.id}" data-tip="${t}" data-eg="${e}">✕</span></span>`).join('')}
+          </div>
+          <div style="display:flex;gap:6px">
+            <input type="text" placeholder="Egzersiz ekle..." class="inp-eg-ekle" data-sid="${s.id}" data-tip="${t}" style="flex:1;font-size:13px;padding:7px 10px">
+            <button class="btn btn-eg-ekle" style="width:auto;font-size:13px;padding:7px 12px;white-space:nowrap" data-sid="${s.id}" data-tip="${t}">+ Ekle</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  el.querySelectorAll('.del[data-sid]').forEach(btn=>btn.addEventListener('click',function(){
+    DB.splits=DB.splits.filter(s=>s.id!==this.dataset.sid);save();renderSplitler();populateSplits();
+  }));
+  el.querySelectorAll('.btn-tipi').forEach(btn=>btn.addEventListener('click',function(){
+    const sid=this.dataset.sid;
+    const inp=el.querySelector(`.inp-yenitipi[data-sid="${sid}"]`);
+    const ad=inp.value.trim();if(!ad)return;
+    const s=getSplit(sid);
+    if(s&&!s.tipler[ad]){s.tipler[ad]=[];inp.value='';save();renderSplitler();}
+  }));
+  el.querySelectorAll('.btn-eg-ekle').forEach(btn=>btn.addEventListener('click',function(){
+    const s=getSplit(this.dataset.sid);
+    const inp=el.querySelector(`.inp-eg-ekle[data-sid="${this.dataset.sid}"][data-tip="${this.dataset.tip}"]`);
+    const eg=inp.value.trim();if(!eg||!s)return;
+    if(!s.tipler[this.dataset.tip].includes(eg))s.tipler[this.dataset.tip].push(eg);
+    inp.value='';save();renderSplitler();
+  }));
+  el.querySelectorAll('.chip-del').forEach(span=>span.addEventListener('click',function(){
+    const s=getSplit(this.dataset.sid);
+    if(s)s.tipler[this.dataset.tip]=s.tipler[this.dataset.tip].filter(e=>e!==this.dataset.eg);
+    save();renderSplitler();
+  }));
+}
+
+document.getElementById('btn-splitekle').addEventListener('click',function(){
+  const inp=document.getElementById('inp-splitad');
+  const ad=inp.value.trim();if(!ad)return;
+  DB.splits.push({id:'sp'+Date.now(),ad,tipler:{}});
+  inp.value='';save();renderSplitler();populateSplits();
+});
+
+// INIT
+document.getElementById('inp-tarih').value=new Date().toISOString().split('T')[0];
+populateSplits();
+renderSession();
+</script>
+</body>
+</html>
