@@ -110,6 +110,7 @@
     <button class="tab" id="tab-gecmis">Geçmiş</button>
     <button class="tab" id="tab-pr">Rekorlar</button>
     <button class="tab" id="tab-split">Splitler</button>
+    <button class="tab" id="tab-yedek">Yedek</button>
   </div>
 
   <!-- KAYDET -->
@@ -190,6 +191,19 @@
       <button class="btn" id="btn-splitekle" style="width:auto;white-space:nowrap">+ Oluştur</button>
     </div>
     <div id="split-liste"></div>
+  </div>
+
+  <!-- YEDEK -->
+  <div id="page-yedek" class="page">
+    <div class="sec" style="margin-top:0">Veriyi dışa aktar</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Tüm antrenman geçmişini ve split ayarlarını bir dosyaya kaydeder. Telefon sıfırlamadan önce bunu yap.</p>
+    <button class="btn btn-primary" id="btn-export" style="margin-bottom:2rem">⬇ Yedek dosyası indir</button>
+
+    <div class="sec">Yedeği geri yükle</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Daha önce indirdiğin yedek dosyasını seç. Mevcut verinin üzerine yazar.</p>
+    <input type="file" id="inp-import" accept=".json" style="margin-bottom:10px">
+    <button class="btn" id="btn-import">⬆ Yedeği yükle</button>
+    <div id="import-msg" style="margin-top:10px;font-size:13px;display:none"></div>
   </div>
 </div>
 
@@ -301,7 +315,9 @@ document.getElementById('inp-eg').addEventListener('keydown', function(e) {
 document.addEventListener('click', e=>{ if(!document.getElementById('inp-eg').contains(e.target)) document.getElementById('ac-drop').style.display='none'; });
 function hlAc(items){items.forEach((it,i)=>it.classList.toggle('hi',i===acIdx));if(acIdx>=0)items[acIdx].scrollIntoView({block:'nearest'});}
 
-// EKLE
+// EKLE / GÜNCELLE
+let editId = null;
+
 document.getElementById('btn-ekle').addEventListener('click', function() {
   const eg  = document.getElementById('inp-eg').value.trim();
   const ag  = parseFloat(document.getElementById('inp-ag').value);
@@ -319,7 +335,15 @@ document.getElementById('btn-ekle').addEventListener('click', function() {
   if(isNaN(tek)||tek<=0){document.getElementById('inp-tek').style.borderColor='#E24B4A';ok=false;}
   if(!ok) return;
   const split = getSplit(sid);
-  DB.log.push({id:Date.now(),tarih,splitId:sid,splitAd:split?split.ad:'',gun,egzersiz:eg,agirlik:ag,set:se,tekrar:tek,rir,not});
+  if(editId !== null) {
+    const idx = DB.log.findIndex(d=>d.id===editId);
+    if(idx>=0) DB.log[idx] = {...DB.log[idx], egzersiz:eg, agirlik:ag, set:se, tekrar:tek, rir, not};
+    editId = null;
+    document.getElementById('btn-ekle').textContent = '+ Ekle';
+    document.getElementById('btn-ekle').style.background = '';
+  } else {
+    DB.log.push({id:Date.now(),tarih,splitId:sid,splitAd:split?split.ad:'',gun,egzersiz:eg,agirlik:ag,set:se,tekrar:tek,rir,not});
+  }
   save();
   document.getElementById('inp-eg').value='';
   document.getElementById('inp-ag').value='';
@@ -338,14 +362,37 @@ function renderSession(){
   const tarih = document.getElementById('inp-tarih').value;
   const rows = DB.log.filter(d=>d.tarih===tarih);
   const tbody = document.getElementById('tbody-session');
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="empty">Henüz kayıt yok</td></tr>';return;}
-  tbody.innerHTML = rows.map(d=>`<tr>
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="8" class="empty">Henüz kayıt yok</td></tr>';return;}
+  tbody.innerHTML = rows.map(d=>`<tr id="row-${d.id}">
     <td>${d.egzersiz}</td><td>${d.agirlik}kg</td><td>${d.set}</td><td>${d.tekrar}</td>
     <td>${rirB(d.rir)}</td><td class="note-cell">${d.not||'—'}</td>
+    <td><button class="edit-btn" data-id="${d.id}" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 3px;color:var(--text2)">✏️</button></td>
     <td><button class="del" data-id="${d.id}">✕</button></td>
   </tr>`).join('');
   tbody.querySelectorAll('.del').forEach(btn=>btn.addEventListener('click',function(){
+    if(editId===parseInt(this.dataset.id)){
+      editId=null;
+      document.getElementById('btn-ekle').textContent='+ Ekle';
+      document.getElementById('btn-ekle').style.background='';
+      ['inp-eg','inp-ag','inp-tek','inp-not'].forEach(id=>document.getElementById(id).value='');
+    }
     DB.log=DB.log.filter(d=>d.id!==parseInt(this.dataset.id));save();renderSession();
+  }));
+  tbody.querySelectorAll('.edit-btn').forEach(btn=>btn.addEventListener('click',function(){
+    const id = parseInt(this.dataset.id);
+    const d = DB.log.find(r=>r.id===id);
+    if(!d) return;
+    editId = id;
+    document.getElementById('inp-eg').value = d.egzersiz;
+    document.getElementById('inp-ag').value = d.agirlik;
+    document.getElementById('inp-set').value = d.set;
+    document.getElementById('inp-tek').value = d.tekrar;
+    document.getElementById('inp-rir').value = d.rir;
+    document.getElementById('inp-not').value = d.not||'';
+    document.getElementById('btn-ekle').textContent = '✓ Güncelle';
+    document.getElementById('btn-ekle').style.background = '#3B6D11';
+    document.getElementById('inp-eg').focus();
+    window.scrollTo({top:0, behavior:'smooth'});
   }));
 }
 
@@ -460,6 +507,50 @@ document.getElementById('btn-splitekle').addEventListener('click',function(){
 document.getElementById('inp-tarih').value=new Date().toISOString().split('T')[0];
 populateSplits();
 renderSession();
+
+// TAB: yedek
+document.getElementById('tab-yedek').addEventListener('click', function() {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  this.classList.add('active');
+  document.getElementById('page-yedek').classList.add('active');
+});
+
+// EXPORT
+document.getElementById('btn-export').addEventListener('click', function() {
+  const json = JSON.stringify(DB, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const tarih = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = 'antrenman-yedek-' + tarih + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// IMPORT
+document.getElementById('btn-import').addEventListener('click', function() {
+  const file = document.getElementById('inp-import').files[0];
+  const msg = document.getElementById('import-msg');
+  if (!file) { msg.style.display='block'; msg.style.color='#A32D2D'; msg.textContent='Lütfen bir dosya seç.'; return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed.splits || !parsed.log) throw new Error();
+      DB.splits = parsed.splits;
+      DB.log = parsed.log;
+      save();
+      msg.style.display='block'; msg.style.color='#3B6D11';
+      msg.textContent='Yedek başarıyla yüklendi! ' + DB.log.length + ' kayıt geri getirildi.';
+    } catch(err) {
+      msg.style.display='block'; msg.style.color='#A32D2D';
+      msg.textContent='Geçersiz dosya. Lütfen doğru yedek dosyasını seç.';
+    }
+  };
+  reader.readAsText(file);
+});
 </script>
 </body>
 </html>
